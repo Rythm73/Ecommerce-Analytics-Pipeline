@@ -6,6 +6,47 @@ Findings are numbered `DQ-NNN` and referenced from the SQL constraint scripts an
 
 ---
 
+## Summary of all findings
+
+| ID | Table | Issue (one line) | Severity | Fix layer |
+|---|---|---|---|---|
+| DQ-001 | order_reviews | 789 review_id values propagate across multiple orders | Structural | Raw (composite PK) |
+| DQ-002 | products | 623 products lack a matching English category translation | Structural | Staging (COALESCE fallback) |
+| DQ-003 | orders | 8 delivered orders have NULL delivery timestamp | Minor | Doc |
+| DQ-004 | orders | 6 canceled orders have a delivery timestamp (status overloads cancel + return) | Semantic | Doc |
+| DQ-005 | orders | 1,359 orders where `approved_at` post-dates carrier handoff — column actually captures payment settlement | Semantic | Staging (rename column) |
+| DQ-006 | orders | 23 orders where carrier date post-dates customer delivery (clock skew) | Minor | Doc |
+| DQ-007 | order_items | 775 orders have no item-level records (mostly pre-fulfillment statuses) | Structural | Doc |
+| DQ-008 | order_items | 383 items have $0 freight, clustered in 9 sellers (bundled-shipping pricing) | Semantic | Doc |
+| DQ-009 | order_items | 4 items have shipping_limit_date with year-entry errors (off by 3 years) | Minor | Staging (correct dates) |
+| DQ-010 | order_payments | 3 `not_defined` payment rows + 6 zero-value voucher rows (accounting artifacts) | Minor | Staging (filter out) |
+| DQ-011 | order_payments | 2 credit_card payments with installments=0 (data entry errors) | Minor | Staging (COALESCE to 1) |
+| DQ-012 | orders | 1 delivered order has no payment record (launch-era anomaly) | Minor | Doc |
+| DQ-013 | order_reviews | 547 orders have multiple review submissions (inverse of DQ-001) | Structural | Marts (grain decision) |
+| DQ-014 | products | 2 products have all-null physical attributes (missing dimensions) | Minor | Staging (flag) |
+| DQ-015 | products | 4 products with 0g weight + identical 30×25×30 dimensions (copy-pasted template) | Minor | Staging (flag) |
+| DQ-016 | geolocation | 42 rows with coordinates outside Brazil's bounding box | Minor | Staging (filter, then median aggregation) |
+| DQ-017 | geolocation | 45% of zip prefixes have multiple city name variants (uncontrolled free-text) | Structural | Staging (normalize), Marts (use zip not city as join key) |
+| DQ-018 | geolocation | 1.05% of customer zips / 0.31% of seller zips not in geolocation table | Minor | Staging (LEFT JOIN, fallback row) |
+| DQ-019 | orders | 64 orders show batch-administrative delivery timestamps (Sept 2017 bulk closure) | Semantic | Staging (flag as `is_batch_resolved`) |
+
+### Severity definitions
+- **Structural**: affects PK/grain/join keys; changes how data is modeled
+- **Semantic**: data is technically valid but means something other than its column name suggests
+- **Minor**: small row counts, low blast radius, mostly informational
+
+### Fix layer definitions
+- **Raw**: handled in constraint declaration (e.g., composite PK)
+- **Staging**: cleaned during `raw → staging` transformation in Phase 2
+- **Marts**: addressed in star schema design choices (Day 5–6)
+- **Doc**: documented for analyst consumers; no code change required
+
+### Pattern observations
+- **Most findings are minor or semantic** (no data corruption, just nuanced meaning) — encouraging signal that the source data is largely trustworthy
+- **Geolocation has the most structural issues** (DQ-016, DQ-017, DQ-018) — concentrated in one table
+- **Order lifecycle timestamps are semantically noisy** (DQ-003, DQ-004, DQ-005, DQ-006, DQ-019) — five separate findings about timestamp/status semantics; analysts should trust timestamps over status fields, and use `order_purchase_timestamp` as the canonical "start of clock"
+- **2 high-leverage findings are inverse pairs**: DQ-001 + DQ-013 together establish that reviews ↔ orders is many-to-many on both axes — a critical input for star schema grain decisions
+
 ## DQ-001 — order_reviews: review_id is not unique
 
 **Discovered:** Day 2, attempting `PRIMARY KEY (review_id)` on `raw.order_reviews`.
@@ -312,7 +353,7 @@ Findings are numbered `DQ-NNN` and referenced from the SQL constraint scripts an
 
 **Implication for downstream modeling:**
 - Any distance-based analysis (delivery distance, seller-to-customer proximity, route optimization) must filter `geolocation_lat BETWEEN -34 AND 5 AND geolocation_lng BETWEEN -74 AND -34` to exclude these 42 rows.
-- For dimensional modeling, when aggregating multiple lat/lng records per zip prefix into a single point, use the *median* (not mean) — medians are robust to these outliers; means would be pulled toward Mexico/Spain.
+- For dimensional modeling, **use median aggregation** when collapsing multi-row geolocation to single-row dim_geolocation. Empirical evidence: 52 zip prefixes have mean-vs-median divergence >100 km due to the 42 out-of-bounds rows. Median is robust without requiring upstream filtering. (Verified Day 4, notebook `02_cross_table_and_outliers.ipynb`.)
 - In staging, recommend a `geolocation_clean` table that removes these 42 rows entirely.
 
 ---
@@ -356,3 +397,25 @@ Findings are numbered `DQ-NNN` and referenced from the SQL constraint scripts an
 - Joining `customers`/`sellers` to `geolocation` via `LEFT JOIN` is mandatory — `INNER JOIN` would silently drop 278+7 = 285 records.
 - For any distance-based computation (delivery distance, seller proximity), customers/sellers without geolocation must be either: (a) excluded with documentation, or (b) approximated using city-level centroid coordinates from same-city records.
 - In `dim_geolocation`, consider a fallback row or sentinel value for "unknown coords" so dimension joins never break.
+
+---
+
+## DQ-019 — orders: 64 orders show batch-administrative delivery timestamps
+
+**Discovered:** Day 4, inspecting extreme delivery time outliers (>100 days).
+
+**Evidence:**
+- 64 orders have `delivery_days > 100` (purchase-to-customer-date)
+- Inspection of the top 10 reveals a striking pattern: 8 of 10 were "delivered" on the exact same date — **2017-09-19**
+- Original purchase dates span Feb–March 2017, meaning these orders sat unresolved for 6+ months before being bulk-marked delivered on a single administrative day
+- Smaller batch-resolution events appear in mid-2018 as well
+
+**Interpretation:** Olist (or a logistics partner) performed bulk administrative closures of stuck/lost/unresolved shipments by setting `order_delivered_customer_date` to a single date. These are not real delivery events — they're reconciliation/audit timestamps that overload the same column used for true delivery confirmations.
+
+**Decision:** Do not modify the raw data. Flag in staging.
+
+**Implication for downstream modeling:**
+- Any delivery-time metric must filter or flag these batch-resolved orders. A reasonable filter: `delivery_days > 100 AND order_delivered_customer_date IN ('2017-09-19', plus other identifiable batch dates)` — to be derived empirically in staging.
+- For SLA / on-time analysis, these orders should be classified separately as "administratively closed" rather than "delivered."
+- Without this filter, the 99th percentile delivery time (currently 46 days) is artificially inflated by these batch closures.
+- Useful staging derivation: `delivery_resolution_type IN ('actual', 'batch_admin')`.
