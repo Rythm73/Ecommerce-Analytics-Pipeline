@@ -1,0 +1,131 @@
+// ============================================================
+// Olist Retail Analytics — Star Schema
+// ============================================================
+
+Table fact_orders {
+  order_key bigint [pk, increment]
+  order_id varchar [not null, note: 'natural key (degenerate)']
+  customer_key bigint [ref: > dim_customer.customer_key]
+  purchase_date_key int [ref: > dim_date.date_key]
+  delivered_date_key int [ref: > dim_date.date_key, note: 'role-playing']
+  order_status varchar [note: 'degenerate dimension']
+  delivery_days_actual numeric
+  delivery_lateness_days numeric
+  total_order_value numeric [note: 'denormalized from fact_payments']
+  is_delivered boolean
+  is_canceled boolean
+  is_batch_resolved boolean [note: 'DQ-019 flag']
+  Note: 'Grain: one row per order. 99,441 rows.'
+}
+
+Table fact_order_items {
+  order_item_key bigint [pk, increment]
+  order_id varchar [not null]
+  order_item_id varchar [not null]
+  product_key bigint [ref: > dim_product.product_key]
+  seller_key bigint [ref: > dim_seller.seller_key]
+  purchase_date_key int [ref: > dim_date.date_key, note: 'denormalized for query speed']
+  shipping_limit_date_key int [ref: > dim_date.date_key, note: 'role-playing']
+  price numeric
+  freight_value numeric
+  total_item_value numeric [note: 'price + freight_value']
+  freight_to_price_ratio numeric
+  Note: 'Grain: one row per item per order. 112,650 rows.'
+}
+
+Table fact_payments {
+  payment_key bigint [pk, increment]
+  order_id varchar [not null]
+  payment_sequential int [not null]
+  purchase_date_key int [ref: > dim_date.date_key]
+  payment_type varchar [note: 'degenerate dimension']
+  payment_installments int
+  payment_value numeric
+  is_not_defined_placeholder boolean [note: 'DQ-010 flag']
+  is_voucher_zero_balance boolean [note: 'DQ-010 addendum flag']
+  is_installments_data_error boolean [note: 'DQ-011 flag']
+  Note: 'Grain: one row per payment installment. 103,886 rows.'
+}
+
+Table fact_reviews {
+  review_key bigint [pk, increment]
+  review_id varchar [not null]
+  order_id varchar [not null]
+  review_creation_date_key int [ref: > dim_date.date_key]
+  review_score int
+  response_lag_hours numeric
+  has_comment boolean
+  is_score_extreme boolean [note: 'score = 1 or 5']
+  Note: 'Grain: one row per (review_id, order_id) pair. 99,224 rows. DQ-001 + DQ-013 captured at source grain.'
+}
+
+Table dim_customer {
+  customer_key bigint [pk, increment]
+  customer_unique_id varchar [not null, unique, note: 'natural key — real person']
+  customer_zip_code_prefix varchar [ref: > dim_geolocation.zip_code_prefix]
+  customer_city varchar
+  customer_state varchar
+  customer_first_purchase_date date
+  Note: 'SCD Type 1. 96,096 rows. Per real person, not per order.'
+}
+
+Table dim_product {
+  product_key bigint [pk, increment]
+  product_id varchar [not null, unique]
+  product_category_name_portuguese varchar
+  product_category_name_english varchar
+  product_category_clean varchar [note: 'COALESCE(english, portuguese, unknown) — DQ-002']
+  product_weight_g numeric
+  product_length_cm numeric
+  product_height_cm numeric
+  product_width_cm numeric
+  product_volume_cm3 numeric
+  is_metadata_complete boolean [note: 'DQ-002 flag']
+  is_dimensions_missing boolean [note: 'DQ-014 flag']
+  is_weight_zero_placeholder boolean [note: 'DQ-015 flag']
+  Note: 'SCD Type 1. 32,951 rows.'
+}
+
+Table dim_seller {
+  seller_key bigint [pk, increment]
+  seller_id varchar [not null, unique]
+  seller_zip_code_prefix varchar [ref: > dim_geolocation.zip_code_prefix]
+  seller_city varchar
+  seller_state varchar
+  seller_first_sale_date date
+  seller_total_items_sold int
+  seller_avg_review_score numeric
+  seller_one_star_rate numeric
+  is_bundled_shipping boolean [note: 'DQ-008 flag']
+  is_underperformer boolean [note: 'derived: avg_score < 3 AND total_items > 20']
+  Note: 'SCD Type 1. 3,095 rows. Metrics pre-computed in marts.'
+}
+
+Table dim_date {
+  date_key int [pk, note: 'YYYYMMDD integer']
+  full_date date [unique]
+  year int
+  quarter int
+  month int
+  month_name varchar
+  day int
+  day_of_week int
+  day_name varchar
+  iso_week int
+  iso_year int
+  is_weekend boolean
+  is_brazilian_holiday boolean
+  Note: '~850 rows covering 2016-09 to 2018-12. Role-playing on 7+ FKs.'
+}
+
+Table dim_geolocation {
+  geolocation_key bigint [pk, increment]
+  zip_code_prefix varchar [not null, unique]
+  city_canonical varchar
+  city_raw_variants_count int
+  state varchar
+  latitude_median numeric
+  longitude_median numeric
+  is_unknown boolean
+  Note: 'Outrigger. ~19,016 rows (incl. 1 sentinel). Median aggregation — DQ-016.'
+}
