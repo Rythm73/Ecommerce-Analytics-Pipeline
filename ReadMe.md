@@ -1,4 +1,20 @@
 ---
+# Olist Retail Analytics Pipeline
+
+End-to-end data engineering project building a retail analytics platform on Brazilian e-commerce data (Olist, 2016–2018). The project is structured in two phases that mirror how data engineering work happens in industry: first you understand and model the data, then you build production infrastructure on top of it.
+
+---
+
+## Project structure
+ecommerce-analytics-pipeline/
+├── phase_1_analyst/    ← analytical foundations: loading, profiling, modeling
+│   ├── data/           (gitignored — Olist CSVs)
+│   ├── notebooks/      (profiling + cross-table analysis)
+│   ├── scripts/        (loader)
+│   ├── sql/            (constraints + star schema DDL)
+│   └── docs/           (data quality findings, ADR, schema diagram)
+├── phase_2_engineer/   ← production infra (Snowflake, dbt) — Week 4
+└── README.md
 
 ## Current status
 
