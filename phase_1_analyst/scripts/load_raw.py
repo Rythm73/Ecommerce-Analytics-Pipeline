@@ -12,7 +12,7 @@ DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
 engine = create_engine(DATABASE_URL)
 
-print(f"Connecting to database...")
+print(f"Connecting to database.......")
 print(f"Reading CSVs from: {DATA_DIR}")
 
 def load_csv_to_raw(file_name: str, table_name: str, dtypes: dict = None, date_columns: list = None):

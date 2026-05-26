@@ -133,17 +133,9 @@ Phase 2 focuses on production-grade analytics engineering.
 
 ## If You Have 5 Minutes
 
-Start with:
-
-1. `phase_1_analyst/docs/adr_001_star_schema.md`
-   - Architecture decisions and modeling rationale
-
-2. `phase_1_analyst/docs/data_quality.md`
-   - Summary of all 19 data quality findings
-
-3. `phase_1_analyst/docs/star_schema_v1.png`
-   - Star schema diagram
-
+1. [`phase_1_analyst/docs/adr_001_star_schema.md`](phase_1_analyst/docs/adr_001_star_schema.md) — Architecture decisions and modeling rationale
+2. [`phase_1_analyst/docs/data_quality.md`](phase_1_analyst/docs/data_quality.md) — Summary of all 19 data quality findings
+3. [`phase_1_analyst/docs/star_schema_v1.png`](phase_1_analyst/docs/star_schema_v1.png) — Star schema diagram
 ---
 
 ## If You Have More Time
@@ -197,14 +189,8 @@ Time range:
 
 ---
 
-# Future Enhancements
+## Beyond Phase 2 (long-term ideas)
 
-Potential future additions:
-
-- Incremental dbt models
-- Slowly changing dimensions (SCDs)
-- Snapshotting
-- ML-based delivery delay prediction
-- Customer segmentation pipelines
-- Real-time ingestion simulation
-- Snowflake cost optimization analysis
+- ML-based delivery delay prediction (uses the Phase 2 fact_orders.delivery_lateness_days)
+- Customer segmentation on cohort + purchase patterns
+- Snowflake cost optimization (query profiling on the marts layer)
