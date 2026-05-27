@@ -34,3 +34,14 @@ This project investigates five questions:
 5. **Where do orders drop off in the fulfillment pipeline?** (Process bottlenecks)
 
 The analysis covers data from September 2016 through August 2018.
+
+## Tech stack
+
+| Layer | Tool |
+|---|---|
+| Database | PostgreSQL 18 |
+| Language | Python 3.13, SQL |
+| Python libraries | pandas, SQLAlchemy, psycopg2, jupyter, matplotlib, seaborn |
+| Visualization | Tableau Public |
+| Documentation | Markdown, dbdiagram.io |
+| Environment | macOS, venv, DBeaver, JupyterLab |
