@@ -20,3 +20,17 @@ Customer review scores remain stable for delivery times under 21 days, then coll
 | 60+ days | 283 | 2.16 | 60.4% | 15.9% |
 
 **Operational implication:** rather than generic "improve delivery," focus on the 12% of orders that breach the 21-day threshold. They drive the majority of 1-star reviews.
+
+## Project context
+
+Olist is a Brazilian e-commerce marketplace connecting small sellers to large retail platforms. With ~1.5M rows of order, customer, seller, payment, and review data across 9 raw tables, the dataset offers a realistic environment for the operational questions a marketplace analyst would actually face.
+
+This project investigates five questions:
+
+1. **What categories drive revenue?** (Pricing and inventory strategy)
+2. **How does delivery time affect customer satisfaction?** (Operational priorities)
+3. **Are some sellers dragging down marketplace reputation?** (Quality control)
+4. **Where geographically is the business strongest, and where could it grow?** (Expansion strategy)
+5. **Where do orders drop off in the fulfillment pipeline?** (Process bottlenecks)
+
+The analysis covers data from September 2016 through August 2018.

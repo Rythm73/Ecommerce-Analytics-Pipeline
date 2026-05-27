@@ -25,10 +25,10 @@ env/
 .DS_Store
 
 # Project-specific
-data_analyst/data/*
-!data_analyst/data/.gitkeep
-!data_analyst/data/tableau_exports/
-!data_analyst/data/tableau_exports/*
+data/*
+!data/.gitkeep
+!data/tableau_exports/
+!data/tableau_exports/*
 
 # Tableau temp/lock files
 .~*.twbr
