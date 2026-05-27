@@ -1,0 +1,9 @@
+"order_status","status_order","order_count","pct_of_total"
+created,1,5,0.01
+approved,2,2,0.00
+invoiced,3,314,0.32
+processing,4,301,0.30
+shipped,5,1107,1.11
+delivered,6,96478,97.02
+unavailable,7,609,0.61
+canceled,8,625,0.63
