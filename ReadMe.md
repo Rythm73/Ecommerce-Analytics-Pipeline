@@ -56,3 +56,29 @@ Of ~1,500 sellers with 10+ orders, fewer than 50 fall below an average review sc
 ### Fulfillment is efficient; the data has rough edges
 
 97% of orders reach `delivered` status. Only ~1.2% exit the pipeline via `canceled` or `unavailable`. However, investigation surfaced semantic issues in the order lifecycle data: 64 orders with administrative bulk-closure delivery dates (DQ-019), 23 orders with carrier timestamps after customer delivery (clock skew, DQ-006), and `order_approved_at` actually capturing payment settlement rather than approval (DQ-005). All documented in `docs/data_quality.md`.
+
+## Business recommendations
+
+### 1. Treat 21+ day delivery times as a customer experience emergency
+
+The 21-day patience cliff is the single most actionable finding in this dataset. 12% of orders breach this threshold, and they generate the majority of 1-star reviews. Rather than pursuing generic "faster shipping" initiatives, Olist should:
+
+- **Build an early-warning system** that flags orders projected to exceed 21 days, based on carrier handoff timing
+- **Proactively communicate** with customers whose orders cross the threshold (transparent delay notifications correlate with higher recovery)
+- **Track the 21-day breach rate** as a top-level operational KPI alongside delivery time itself
+
+### 2. Audit and act on bottom-decile sellers
+
+Fewer than 50 sellers fall below 3.0 stars on review — a small enough group to investigate individually. Recommended workflow:
+
+- **Quarterly seller scorecard**: surface the bottom 50 by review score (filtered to sellers with 10+ orders)
+- **Two-strike policy**: sellers below 3.0 stars for two consecutive quarters receive intervention (training, account review, or suspension)
+- **Quality-weighted ranking** in search results: down-rank consistently low-rated sellers in default product listings to protect new buyers
+
+### 3. Investigate growth potential in the underserved north
+
+Northern Brazilian states contribute under 2% of revenue but represent ~30% of the country's geographic area and significant population. Three angles worth investigating:
+
+- **Logistics partnerships** with regional carriers to reduce delivery times to Amazon-region states (likely the binding constraint)
+- **Seller acquisition** in northern capital cities (Belém, Manaus) to reduce shipping distances
+- **Local payment methods**: investigate whether `boleto` adoption differs by region and whether that affects conversion.
