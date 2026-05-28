@@ -39,9 +39,20 @@ The analysis covers data from September 2016 through August 2018.
 
 | Layer | Tool |
 |---|---|
-| Database | PostgreSQL 18 |
-| Language | Python 3.13, SQL |
-| Python libraries | pandas, SQLAlchemy, psycopg2, jupyter, matplotlib, seaborn |
+| Database | PostgreSQL |
+| Language | Python (pandas, SQLAlchemy), SQL |
 | Visualization | Tableau Public |
-| Documentation | Markdown, dbdiagram.io |
-| Environment | macOS, venv, DBeaver, JupyterLab |
+
+## Other key insights
+
+### Revenue is geographically concentrated
+
+São Paulo (R$5.2M), Rio de Janeiro, and Minas Gerais together account for ~60% of total marketplace revenue. The Amazon-region states (RR, AP, AM, PA) combined contribute under 2%. The customer base is similarly concentrated: 42% of customers are in SP alone. This suggests Olist's growth ceiling in the southeast and untapped opportunity in the north.
+
+### A small number of sellers drag down satisfaction
+
+Of ~1,500 sellers with 10+ orders, fewer than 50 fall below an average review score of 3.0. But these underperformers handle real volume — the worst-rated seller in the dataset processed 114 orders at an average score of 2.20 (58.8% 1-star reviews). Marketplace-wide reputation risk is concentrated in a small, identifiable group.
+
+### Fulfillment is efficient; the data has rough edges
+
+97% of orders reach `delivered` status. Only ~1.2% exit the pipeline via `canceled` or `unavailable`. However, investigation surfaced semantic issues in the order lifecycle data: 64 orders with administrative bulk-closure delivery dates (DQ-019), 23 orders with carrier timestamps after customer delivery (clock skew, DQ-006), and `order_approved_at` actually capturing payment settlement rather than approval (DQ-005). All documented in `docs/data_quality.md`.
