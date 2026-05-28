@@ -82,3 +82,19 @@ Northern Brazilian states contribute under 2% of revenue but represent ~30% of t
 - **Logistics partnerships** with regional carriers to reduce delivery times to Amazon-region states (likely the binding constraint)
 - **Seller acquisition** in northern capital cities (Belém, Manaus) to reduce shipping distances
 - **Local payment methods**: investigate whether `boleto` adoption differs by region and whether that affects conversion.
+
+## Next steps and limitations
+
+### Limitations of this analysis
+
+- **Static snapshot.** The dataset covers Sept 2016 – Aug 2018. Findings reflect that period; consumer behavior and Olist's marketplace have likely shifted since.
+- **Review attribution is imperfect.** When an order has items from multiple sellers, the order's review is attributed to all of them. The data doesn't tell us which seller a complaint was actually about, so seller-level review metrics carry some noise.
+- **Cohort analysis was deprioritized.** Olist's 3.4% repeat-buyer rate is too low for meaningful cohort retention work on this dataset; that analysis was skipped in favor of operational insights.
+- **No causal claims.** Correlations between delivery time and review scores are strong, but this is observational data — confounders like seller reliability and product category likely matter.
+
+### What I'd do with more time
+
+- **Geographic deep-dive into the patience cliff.** Does the 21-day threshold hold uniformly across Brazilian states, or is it driven by long-tail northern deliveries? A state-level breakdown of the delivery-vs-review curve would refine the operational recommendation.
+- **Seller cohort analysis.** Group sellers by tenure on the platform and see whether new sellers cluster in the underperformer group (training opportunity) or whether the bad sellers are long-tenured (intervention opportunity).
+- **Category-level review patterns.** Are some categories systematically more 1-star-prone (e.g., furniture due to delivery damage)? This would refine the seller intervention logic.
+- **Build the production data pipeline.** The dimensional model in `sql/01_star_schema.sql` was designed but not populated. A natural extension is to implement it via dbt and Snowflake for repeatable analytical workflows.
